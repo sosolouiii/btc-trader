@@ -4,12 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#0a0e1a">
-<title>AlgoTrend Pro | Institutional Trading Terminal</title>
+<title>AlgoTrend Pro</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg-primary: #0a0e1a;
@@ -50,13 +48,11 @@
     overflow-x: hidden;
   }
 
-  /* Custom scrollbar */
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: var(--bg-primary); }
   ::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
   ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
-  /* Animations */
   @keyframes fadeInUp {
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
@@ -65,24 +61,14 @@
     0% { transform: scale(0.8); opacity: 0.5; }
     100% { transform: scale(2); opacity: 0; }
   }
-  @keyframes shimmer {
-    0% { background-position: -200% 0; }
-    100% { background-position: 200% 0; }
-  }
   @keyframes spin {
     to { transform: rotate(360deg); }
   }
 
   .animate-in { animation: fadeInUp 0.5s ease-out forwards; }
-  .delay-1 { animation-delay: 0.1s; opacity: 0; }
-  .delay-2 { animation-delay: 0.2s; opacity: 0; }
-  .delay-3 { animation-delay: 0.3s; opacity: 0; }
-  .delay-4 { animation-delay: 0.4s; opacity: 0; }
 
-  /* Layout */
   .app { display: flex; min-height: 100vh; }
   
-  /* Sidebar */
   .sidebar {
     width: 260px;
     background: var(--bg-secondary);
@@ -92,7 +78,6 @@
     position: fixed;
     left: 0; top: 0; bottom: 0;
     z-index: 50;
-    transition: transform 0.3s ease;
   }
   
   .sidebar-header {
@@ -179,6 +164,7 @@
   .nav-item svg {
     width: 20px; height: 20px;
     opacity: 0.7;
+    flex-shrink: 0;
   }
   
   .nav-item.active svg { opacity: 1; }
@@ -201,6 +187,7 @@
     border-radius: 50%;
     background: var(--success);
     position: relative;
+    flex-shrink: 0;
   }
   
   .status-dot::after {
@@ -221,7 +208,6 @@
     animation: none;
   }
 
-  /* Main Content */
   .main {
     flex: 1;
     margin-left: 260px;
@@ -281,14 +267,13 @@
     border: 1px solid rgba(239, 68, 68, 0.2);
   }
 
-  /* Content */
   .content {
     flex: 1;
     padding: 32px;
     overflow-y: auto;
+    min-height: calc(100vh - 64px);
   }
 
-  /* Stats Grid */
   .stats-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -342,6 +327,7 @@
     letter-spacing: -1px;
     line-height: 1;
     font-family: var(--font-mono);
+    transition: color 0.3s;
   }
   
   .stat-value.accent { color: var(--accent); }
@@ -360,7 +346,6 @@
   .stat-change.positive { color: var(--success); }
   .stat-change.negative { color: var(--danger); }
 
-  /* Section */
   .section {
     background: var(--bg-card);
     border: 1px solid var(--border);
@@ -390,14 +375,12 @@
     color: var(--accent);
   }
 
-  /* Chart Container */
   .chart-container {
     padding: 24px;
     height: 320px;
     position: relative;
   }
 
-  /* Table */
   .table-wrap {
     overflow-x: auto;
   }
@@ -445,7 +428,6 @@
     font-weight: 500;
   }
 
-  /* Tags */
   .tag {
     display: inline-flex;
     align-items: center;
@@ -475,7 +457,6 @@
     border: 1px solid rgba(245, 158, 11, 0.2);
   }
 
-  /* Buttons */
   .btn {
     display: inline-flex;
     align-items: center;
@@ -524,7 +505,6 @@
     color: var(--text-primary);
   }
 
-  /* Empty state */
   .empty {
     text-align: center;
     padding: 80px 24px;
@@ -542,7 +522,6 @@
     font-size: 28px;
   }
 
-  /* Toast */
   .toast-container {
     position: fixed;
     top: 24px;
@@ -572,62 +551,126 @@
   .toast.error { border-left: 3px solid var(--danger); }
   .toast.info { border-left: 3px solid var(--info); }
 
-  /* Responsive */
   @media (max-width: 1024px) {
     .stats-grid { grid-template-columns: repeat(2, 1fr); }
   }
   
   @media (max-width: 768px) {
-    .sidebar { transform: translateX(-100%); }
-    .sidebar.open { transform: translateX(0); }
+    .sidebar { display: none; }
     .main { margin-left: 0; }
     .stats-grid { grid-template-columns: 1fr; }
     .content { padding: 20px; }
     .topbar { padding: 0 20px; }
   }
 
-  /* Skeleton loading */
-  .skeleton {
-    background: linear-gradient(90deg, var(--bg-hover) 25%, var(--border-light) 50%, var(--bg-hover) 75%);
-    background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
-    border-radius: var(--radius-sm);
+  /* Loading state */
+  .loading-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--bg-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 20px;
+    z-index: 200;
+    transition: opacity 0.5s;
+  }
+  
+  .loading-overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+  
+  .spinner {
+    width: 48px; height: 48px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
   }
 </style>
 </head>
 <body>
 
-<div class="app" id="app">
-  <!-- Loading State -->
-  <div style="display:flex;align-items:center;justify-content:center;height:100vh;width:100vw;flex-direction:column;gap:20px;">
-    <div style="width:48px;height:48px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;"></div>
-    <div style="color:var(--text-muted);font-size:14px;font-weight:500;">Loading terminal...</div>
-  </div>
+<div class="loading-overlay" id="loader">
+  <div class="spinner"></div>
+  <div style="color:var(--text-muted);font-size:14px;font-weight:500;">Loading AlgoTrend Pro...</div>
+</div>
+
+<div class="app" id="app" style="opacity:0;transition:opacity 0.5s;">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="brand">
+        <div class="brand-icon">🤖</div>
+        <div class="brand-text">
+          <h1>AlgoTrend Pro</h1>
+          <span>Institutional Grade</span>
+        </div>
+      </div>
+    </div>
+    
+    <nav class="nav-section">
+      <div class="nav-label">Main</div>
+      <button class="nav-item active" data-screen="dashboard" onclick="showScreen('dashboard')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+        Dashboard
+      </button>
+      <button class="nav-item" data-screen="trades" onclick="showScreen('trades')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
+        Trade History
+      </button>
+      <button class="nav-item" data-screen="analytics" onclick="showScreen('analytics')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        Analytics
+      </button>
+      
+      <div class="nav-label" style="margin-top:24px">System</div>
+      <button class="nav-item" data-screen="settings" onclick="showScreen('settings')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c0 .55.22 1.05.59 1.41.36.37.86.59 1.41.59h.09a2 2 0 1 1 0 4h-.09c-.55 0-1.05.22-1.41.59-.37.36-.59.86-.59 1.41z"/></svg>
+        Configuration
+      </button>
+    </nav>
+    
+    <div class="sidebar-footer">
+      <div class="connection-status">
+        <div class="status-dot" id="footer-status-dot"></div>
+        <span id="footer-status-text">Connecting...</span>
+      </div>
+      <div style="font-size:11px;color:#64748b;margin-top:8px;font-family:var(--font-mono);" id="footer-exchange">
+        --
+      </div>
+    </div>
+  </aside>
+  
+  <main class="main">
+    <header class="topbar">
+      <div class="page-title" id="page-title">Dashboard Overview</div>
+      <div class="topbar-actions">
+        <span class="badge badge-paper" id="topbar-badge">PAPER MODE</span>
+        <button class="btn btn-primary" onclick="sendTestSignal()" style="padding:8px 16px;font-size:12px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          Test Signal
+        </button>
+      </div>
+    </header>
+    
+    <div class="content" id="content">
+      <!-- Content injected here -->
+    </div>
+  </main>
+  
+  <div class="toast-container" id="toast-container"></div>
 </div>
 
 <script>
 const API_URL = window.location.origin;
-
-// Icons (inline SVGs)
-const icons = {
-  layout: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>`,
-  activity: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>`,
-  table: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="12" y1="3" x2="12" y2="21"/></svg>`,
-  settings: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c0 .55.22 1.05.59 1.41.36.37.86.59 1.41.59h.09a2 2 0 1 1 0 4h-.09c-.55 0-1.05.22-1.41.59-.37.36-.59.86-.59 1.41z"/></svg>`,
-  zap: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`,
-  arrowUp: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>`,
-  arrowDown: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`,
-  check: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
-  alert: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
-  info: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`,
-  x: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`
-};
-
 let currentScreen = 'dashboard';
 let appData = null;
 let tradesList = [];
 let equityChart = null;
 let toasts = [];
+let isFirstLoad = true;
 
 function showToast(message, type = 'info') {
   const id = Date.now();
@@ -644,7 +687,7 @@ function renderToasts() {
   if (!container) return;
   container.innerHTML = toasts.map(t => `
     <div class="toast ${t.type}">
-      ${t.type === 'success' ? icons.check : t.type === 'error' ? icons.alert : icons.info}
+      ${t.type === 'success' ? '✓' : t.type === 'error' ? '⚠' : 'ℹ'}
       <span>${t.message}</span>
     </div>
   `).join('');
@@ -656,13 +699,361 @@ async function fetchData() {
       fetch(`${API_URL}/api/status`),
       fetch(`${API_URL}/api/trades?limit=100`)
     ]);
-    appData = await statusRes.json();
-    tradesList = await tradesRes.json();
-    render();
+    const newData = await statusRes.json();
+    const newTrades = await tradesRes.json();
+    
+    // Only update if data changed
+    const dataChanged = JSON.stringify(appData) !== JSON.stringify(newData);
+    const tradesChanged = JSON.stringify(tradesList) !== JSON.stringify(newTrades);
+    
+    appData = newData;
+    tradesList = newTrades;
+    
+    if (isFirstLoad) {
+      document.getElementById('loader').classList.add('hidden');
+      document.getElementById('app').style.opacity = '1';
+      isFirstLoad = false;
+      renderAll();
+    } else {
+      // Partial update - only update values, don't rebuild DOM
+      updateValues();
+      if (tradesChanged && currentScreen === 'trades') {
+        renderTradesTable();
+      }
+    }
   } catch (e) {
     console.error('Fetch error:', e);
-    showToast('Connection error - retrying...', 'error');
   }
+}
+
+function formatCurrency(val) {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val || 0);
+}
+
+function formatDate(dateStr) {
+  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+function updateValues() {
+  const stats = appData?.stats || {};
+  const isActive = appData?.autoTrade && !appData?.circuitOpen;
+  const winRate = stats.totalTrades > 0 ? ((stats.wins / stats.totalTrades) * 100).toFixed(1) : 0;
+  const totalPnl = stats.totalPnl || 0;
+  
+  // Update stat values without rebuilding cards
+  const els = {
+    'stat-balance': formatCurrency(appData?.balance?.usdt),
+    'stat-winrate': winRate + '%',
+    'stat-trades': stats.totalTrades || 0,
+    'stat-dailyloss': formatCurrency(appData?.dailyLoss || 0),
+    'stat-pnl': formatCurrency(totalPnl),
+    'stat-wins': (stats.wins || 0) + ' / ' + (stats.losses || 0)
+  };
+  
+  for (const [id, val] of Object.entries(els)) {
+    const el = document.getElementById(id);
+    if (el && el.textContent !== val) el.textContent = val;
+  }
+  
+  // Update status badge
+  const badge = document.getElementById('topbar-badge');
+  if (badge) {
+    const newText = appData?.paperTrading ? 'PAPER MODE' : isActive ? 'LIVE TRADING' : 'HALTED';
+    const newClass = appData?.paperTrading ? 'badge-paper' : isActive ? 'badge-live' : 'badge-halted';
+    if (badge.textContent !== newText) {
+      badge.textContent = newText;
+      badge.className = 'badge ' + newClass;
+    }
+  }
+  
+  // Update footer status
+  const dot = document.getElementById('footer-status-dot');
+  const txt = document.getElementById('footer-status-text');
+  if (dot) dot.className = 'status-dot' + (isActive ? '' : ' offline');
+  if (txt) txt.textContent = isActive ? 'System Online' : 'Trading Halted';
+  
+  const ex = document.getElementById('footer-exchange');
+  if (ex) ex.textContent = (appData?.exchange?.toUpperCase() || 'OKX') + ' • ' + (appData?.autoTrade ? 'AUTO' : 'MANUAL');
+}
+
+function renderAll() {
+  updateValues();
+  if (currentScreen === 'dashboard') renderDashboard();
+  else if (currentScreen === 'trades') renderTrades();
+  else if (currentScreen === 'analytics') renderAnalytics();
+  else if (currentScreen === 'settings') renderSettings();
+}
+
+function renderDashboard() {
+  const content = document.getElementById('content');
+  content.innerHTML = `
+    <div class="stats-grid animate-in">
+      <div class="stat-card">
+        <div class="stat-label">Account Balance</div>
+        <div class="stat-value accent" id="stat-balance">$0.00</div>
+        <div class="stat-change" id="stat-pnl-wrap" style="color:var(--text-muted)">
+          <span id="stat-pnl">$0.00</span> total PnL
+        </div>
+      </div>
+      
+      <div class="stat-card" id="winrate-card">
+        <div class="stat-label">Win Rate</div>
+        <div class="stat-value" id="stat-winrate">0%</div>
+        <div class="stat-change" id="stat-wins" style="color:var(--text-muted)">0 / 0</div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="stat-label">Total Trades</div>
+        <div class="stat-value" id="stat-trades">0</div>
+        <div class="stat-change" style="color:var(--text-muted)">All time executions</div>
+      </div>
+      
+      <div class="stat-card" id="loss-card">
+        <div class="stat-label">Daily Loss</div>
+        <div class="stat-value" id="stat-dailyloss">$0.00</div>
+        <div class="stat-change" style="color:var(--text-muted)">Limit: $50.00</div>
+      </div>
+    </div>
+    
+    <div class="section animate-in" style="animation-delay:0.1s">
+      <div class="section-header">
+        <div class="section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Recent Activity
+        </div>
+        <button class="btn btn-outline" onclick="showScreen('trades')" style="padding:8px 16px;font-size:12px;">
+          View All (${tradesList.length})
+        </button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Side</th><th>Symbol</th><th>Amount</th><th>Entry</th><th>SL</th><th>TP</th><th>Status</th><th>Time</th></tr>
+          </thead>
+          <tbody id="dashboard-trades-tbody">
+            ${renderTradeRows(tradesList.slice(0, 5))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+  updateValues();
+}
+
+function renderTrades() {
+  const content = document.getElementById('content');
+  content.innerHTML = `
+    <div class="section animate-in">
+      <div class="section-header">
+        <div class="section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
+          Complete Trade History
+        </div>
+        <div style="color:var(--text-muted);font-size:13px;">${tradesList.length} total executions</div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>ID</th><th>Side</th><th>Symbol</th><th>Amount</th><th>Entry</th><th>SL</th><th>TP</th><th>PnL</th><th>Status</th><th>Timestamp</th></tr>
+          </thead>
+          <tbody id="trades-tbody">
+            ${renderTradeRows(tradesList, true)}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function renderTradesTable() {
+  const tbody = document.getElementById('trades-tbody');
+  if (tbody) tbody.innerHTML = renderTradeRows(tradesList, true);
+  const dashTbody = document.getElementById('dashboard-trades-tbody');
+  if (dashTbody) dashTbody.innerHTML = renderTradeRows(tradesList.slice(0, 5));
+}
+
+function renderTradeRows(trades, full = false) {
+  if (!trades || trades.length === 0) {
+    return `<tr><td colspan="${full ? 10 : 8}"><div class="empty"><div class="empty-icon">📊</div><div style="font-size:15px;font-weight:600;margin-bottom:4px;">No trades yet</div><div style="font-size:13px">Signals will appear here when AlgoTrend fires</div></div></td></tr>`;
+  }
+  return trades.map(t => `
+    <tr>
+      ${full ? `<td class="cell-mono" style="color:var(--text-muted)">#${t.id}</td>` : ''}
+      <td><span class="tag tag-${t.side}">${t.side.toUpperCase()}</span></td>
+      <td><strong>${t.symbol}</strong></td>
+      <td class="cell-mono">${formatCurrency(t.amount)}</td>
+      <td class="cell-mono">${t.entryPrice ? '$' + t.entryPrice.toFixed(2) : '--'}</td>
+      <td class="cell-mono" style="color:var(--danger)">${t.sl || '--'}</td>
+      <td class="cell-mono" style="color:var(--success)">${t.tp || '--'}</td>
+      ${full ? `<td class="cell-mono ${(t.pnl || 0) >= 0 ? 'positive' : 'negative'}" style="color:${(t.pnl || 0) >= 0 ? 'var(--success)' : 'var(--danger)'}">${t.pnl ? formatCurrency(t.pnl) : '--'}</td>` : ''}
+      <td><span class="tag tag-filled">${t.status.toUpperCase()}</span></td>
+      <td style="color:var(--text-muted);font-size:12px;">${formatDate(t.createdAt)}</td>
+    </tr>
+  `).join('');
+}
+
+function renderAnalytics() {
+  const stats = appData?.stats || {};
+  const winRate = stats.totalTrades > 0 ? ((stats.wins / stats.totalTrades) * 100).toFixed(1) : 0;
+  
+  document.getElementById('content').innerHTML = `
+    <div class="stats-grid animate-in" style="grid-template-columns:repeat(3,1fr);">
+      <div class="stat-card">
+        <div class="stat-label">Win Rate</div>
+        <div class="stat-value ${winRate >= 50 ? 'positive' : 'negative'}">${winRate}%</div>
+      </div>
+      <div class="stat-card positive">
+        <div class="stat-label">Winning Trades</div>
+        <div class="stat-value positive">${stats.wins || 0}</div>
+      </div>
+      <div class="stat-card negative">
+        <div class="stat-label">Losing Trades</div>
+        <div class="stat-value negative">${stats.losses || 0}</div>
+      </div>
+    </div>
+    
+    <div class="section animate-in" style="animation-delay:0.1s">
+      <div class="section-header">
+        <div class="section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          Equity Curve
+        </div>
+      </div>
+      <div class="chart-container">
+        <canvas id="equityChart"></canvas>
+      </div>
+    </div>
+  `;
+  setTimeout(initChart, 50);
+}
+
+function initChart() {
+  const ctx = document.getElementById('equityChart');
+  if (!ctx) return;
+  if (equityChart) equityChart.destroy();
+  
+  const tradeData = tradesList.map((t, i) => ({
+    x: new Date(t.createdAt),
+    y: tradesList.slice(0, i + 1).reduce((sum, tr) => sum + (tr.pnl || 0), 0)
+  }));
+
+  equityChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      datasets: [{
+        label: 'Equity',
+        data: tradeData,
+        borderColor: '#f59e0b',
+        backgroundColor: 'rgba(245, 158, 11, 0.08)',
+        borderWidth: 2,
+        fill: true,
+        tension: 0.4,
+        pointRadius: 3,
+        pointBackgroundColor: '#f59e0b',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { intersect: false, mode: 'index' },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#151c2c',
+          titleColor: '#f1f5f9',
+          bodyColor: '#94a3b8',
+          borderColor: '#1e293b',
+          borderWidth: 1,
+          padding: 12,
+          displayColors: false,
+          callbacks: {
+            label: (ctx) => 'PnL: ' + formatCurrency(ctx.raw.y)
+          }
+        }
+      },
+      scales: {
+        x: {
+          type: 'time',
+          time: { unit: 'hour', displayFormats: { hour: 'MMM d HH:mm' } },
+          grid: { color: '#1e293b', drawBorder: false },
+          ticks: { color: '#64748b', font: { size: 11 }, maxRotation: 0 }
+        },
+        y: {
+          grid: { color: '#1e293b', drawBorder: false },
+          ticks: { color: '#64748b', font: { size: 11 }, callback: v => '$' + v }
+        }
+      }
+    }
+  });
+}
+
+function renderSettings() {
+  const isActive = appData?.autoTrade && !appData?.circuitOpen;
+  
+  document.getElementById('content').innerHTML = `
+    <div class="section animate-in" style="max-width:600px;">
+      <div class="section-header">
+        <div class="section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c0 .55.22 1.05.59 1.41.36.37.86.59 1.41.59h.09a2 2 0 1 1 0 4h-.09c-.55 0-1.05.22-1.41.59-.37.36-.59.86-.59 1.41z"/></svg>
+          Bot Configuration
+        </div>
+      </div>
+      <div style="padding:24px;">
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:16px;background:var(--bg-hover);border-radius:var(--radius-md);border:1px solid var(--border);">
+            <div>
+              <div style="font-weight:600;margin-bottom:4px;">System Status</div>
+              <div style="font-size:13px;color:var(--text-muted);">${isActive ? 'Active and monitoring signals' : 'Trading is currently halted'}</div>
+            </div>
+            <div class="status-dot ${isActive ? '' : 'offline'}" style="position:relative;"></div>
+          </div>
+          
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div style="padding:16px;background:var(--bg-hover);border-radius:var(--radius-md);border:1px solid var(--border);">
+              <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Exchange</div>
+              <div style="font-weight:700;font-size:18px;">${appData?.exchange?.toUpperCase() || 'OKX'}</div>
+            </div>
+            <div style="padding:16px;background:var(--bg-hover);border-radius:var(--radius-md);border:1px solid var(--border);">
+              <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Mode</div>
+              <div style="font-weight:700;font-size:18px;color:${appData?.paperTrading ? 'var(--info)' : 'var(--danger)'}">${appData?.paperTrading ? 'Paper Trading' : 'LIVE'}</div>
+            </div>
+            <div style="padding:16px;background:var(--bg-hover);border-radius:var(--radius-md);border:1px solid var(--border);">
+              <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Max Position</div>
+              <div style="font-weight:700;font-size:18px;">${formatCurrency(appData?.maxPosition || 100)}</div>
+            </div>
+            <div style="padding:16px;background:var(--bg-hover);border-radius:var(--radius-md);border:1px solid var(--border);">
+              <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Daily Loss Limit</div>
+              <div style="font-weight:700;font-size:18px;color:var(--danger)">${formatCurrency(appData?.dailyLossLimit || 50)}</div>
+            </div>
+          </div>
+          
+          <div style="padding:16px;background:var(--bg-hover);border-radius:var(--radius-md);border:1px solid var(--border);">
+            <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Webhook Endpoint</div>
+            <div style="font-family:var(--font-mono);font-size:13px;color:var(--accent);word-break:break-all;">${window.location.origin}/webhook</div>
+          </div>
+          
+          <button class="btn btn-danger" onclick="killSwitch()" style="width:100%;">
+            ⚠ HALT ALL TRADING
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function showScreen(screen) {
+  currentScreen = screen;
+  document.querySelectorAll('.nav-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.screen === screen);
+  });
+  document.getElementById('page-title').textContent = 
+    screen === 'dashboard' ? 'Dashboard Overview' : 
+    screen === 'trades' ? 'Trade History' : 
+    screen === 'analytics' ? 'Performance Analytics' : 'System Configuration';
+  renderAll();
 }
 
 async function sendTestSignal() {
@@ -695,394 +1086,7 @@ async function killSwitch() {
   }
 }
 
-function formatCurrency(val) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val || 0);
-}
-
-function formatTime(dateStr) {
-  return new Date(dateStr).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-}
-
-function formatDate(dateStr) {
-  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-}
-
-function formatNumber(num) {
-  if (num >= 1000000) return (num / 1000000).toFixed(2) + 'M';
-  if (num >= 1000) return (num / 1000).toFixed(2) + 'K';
-  return num.toFixed(2);
-}
-
-function initChart() {
-  const ctx = document.getElementById('equityChart');
-  if (!ctx) return;
-  
-  if (equityChart) equityChart.destroy();
-  
-  const tradeData = tradesList.map((t, i) => ({
-    x: new Date(t.createdAt),
-    y: tradesList.slice(0, i + 1).reduce((sum, tr) => sum + (tr.pnl || 0), 0)
-  }));
-
-  equityChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      datasets: [{
-        label: 'Equity Curve',
-        data: tradeData,
-        borderColor: '#f59e0b',
-        backgroundColor: 'rgba(245, 158, 11, 0.1)',
-        borderWidth: 2,
-        fill: true,
-        tension: 0.4,
-        pointRadius: 3,
-        pointBackgroundColor: '#f59e0b',
-        pointBorderColor: '#fff',
-        pointBorderWidth: 2,
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: { intersect: false, mode: 'index' },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: '#151c2c',
-          titleColor: '#f1f5f9',
-          bodyColor: '#94a3b8',
-          borderColor: '#1e293b',
-          borderWidth: 1,
-          padding: 12,
-          displayColors: false,
-        }
-      },
-      scales: {
-        x: {
-          type: 'time',
-          time: { unit: 'hour' },
-          grid: { color: '#1e293b', drawBorder: false },
-          ticks: { color: '#64748b', font: { size: 11 } }
-        },
-        y: {
-          grid: { color: '#1e293b', drawBorder: false },
-          ticks: { color: '#64748b', font: { size: 11 }, callback: v => '$' + v }
-        }
-      }
-    }
-  });
-}
-
-function render() {
-  const stats = appData?.stats || {};
-  const isActive = appData?.autoTrade && !appData?.circuitOpen;
-  const winRate = stats.totalTrades > 0 ? ((stats.wins / stats.totalTrades) * 100).toFixed(1) : 0;
-  const totalPnl = stats.totalPnl || 0;
-
-  const app = document.getElementById('app');
-  
-  app.innerHTML = `
-    <aside class="sidebar">
-      <div class="sidebar-header">
-        <div class="brand">
-          <div class="brand-icon">🤖</div>
-          <div class="brand-text">
-            <h1>AlgoTrend Pro</h1>
-            <span>Institutional Grade</span>
-          </div>
-        </div>
-      </div>
-      
-      <nav class="nav-section">
-        <div class="nav-label">Main</div>
-        <button class="nav-item ${currentScreen === 'dashboard' ? 'active' : ''}" onclick="setScreen('dashboard')">
-          ${icons.layout} Dashboard
-        </button>
-        <button class="nav-item ${currentScreen === 'trades' ? 'active' : ''}" onclick="setScreen('trades')">
-          ${icons.table} Trade History
-        </button>
-        <button class="nav-item ${currentScreen === 'analytics' ? 'active' : ''}" onclick="setScreen('analytics')">
-          ${icons.activity} Analytics
-        </button>
-        
-        <div class="nav-label" style="margin-top:24px">System</div>
-        <button class="nav-item ${currentScreen === 'settings' ? 'active' : ''}" onclick="setScreen('settings')">
-          ${icons.settings} Configuration
-        </button>
-      </nav>
-      
-      <div class="sidebar-footer">
-        <div class="connection-status">
-          <div class="status-dot ${isActive ? '' : 'offline'}"></div>
-          <span>${isActive ? 'System Online' : 'Trading Halted'}</span>
-        </div>
-        <div style="font-size:11px;color:#64748b;margin-top:8px;font-family:var(--font-mono);">
-          ${appData?.exchange?.toUpperCase() || 'OKX'} • ${appData?.autoTrade ? 'AUTO' : 'MANUAL'}
-        </div>
-      </div>
-    </aside>
-    
-    <main class="main">
-      <header class="topbar">
-        <div class="page-title">
-          ${currentScreen === 'dashboard' ? 'Dashboard Overview' : 
-            currentScreen === 'trades' ? 'Trade History' : 
-            currentScreen === 'analytics' ? 'Performance Analytics' : 'System Configuration'}
-        </div>
-        <div class="topbar-actions">
-          <span class="badge ${appData?.paperTrading ? 'badge-paper' : isActive ? 'badge-live' : 'badge-halted'}">
-            ${appData?.paperTrading ? 'PAPER MODE' : isActive ? 'LIVE TRADING' : 'HALTED'}
-          </span>
-          <button class="btn btn-primary" onclick="sendTestSignal()" style="padding:8px 16px;font-size:12px;">
-            ${icons.zap} Test Signal
-          </button>
-        </div>
-      </header>
-      
-      <div class="content">
-        ${currentScreen === 'dashboard' ? renderDashboard(stats, winRate, totalPnl) : ''}
-        ${currentScreen === 'trades' ? renderTrades() : ''}
-        ${currentScreen === 'analytics' ? renderAnalytics(stats, winRate) : ''}
-        ${currentScreen === 'settings' ? renderSettings() : ''}
-      </div>
-    </main>
-    
-    <div class="toast-container" id="toast-container"></div>
-  `;
-  
-  renderToasts();
-  if (currentScreen === 'analytics') setTimeout(initChart, 100);
-}
-
-function renderDashboard(stats, winRate, totalPnl) {
-  return `
-    <div class="stats-grid animate-in">
-      <div class="stat-card">
-        <div class="stat-label">Account Balance</div>
-        <div class="stat-value accent">${formatCurrency(appData?.balance?.usdt)}</div>
-        <div class="stat-change ${totalPnl >= 0 ? 'positive' : 'negative'}">
-          ${totalPnl >= 0 ? icons.arrowUp : icons.arrowDown}
-          ${totalPnl >= 0 ? '+' : ''}${formatCurrency(totalPnl)} total PnL
-        </div>
-      </div>
-      
-      <div class="stat-card ${winRate >= 50 ? 'positive' : 'negative'}">
-        <div class="stat-label">Win Rate</div>
-        <div class="stat-value ${winRate >= 50 ? 'positive' : 'negative'}">${winRate}%</div>
-        <div class="stat-change">
-          ${stats.wins || 0} wins / ${stats.losses || 0} losses
-        </div>
-      </div>
-      
-      <div class="stat-card">
-        <div class="stat-label">Total Trades</div>
-        <div class="stat-value">${stats.totalTrades || 0}</div>
-        <div class="stat-change" style="color:var(--text-muted)">
-          All time executions
-        </div>
-      </div>
-      
-      <div class="stat-card ${(appData?.dailyLoss || 0) > (appData?.dailyLossLimit * 0.8) ? 'negative' : ''}">
-        <div class="stat-label">Daily Loss</div>
-        <div class="stat-value ${(appData?.dailyLoss || 0) > (appData?.dailyLossLimit * 0.8) ? 'negative' : ''}">
-          ${formatCurrency(appData?.dailyLoss || 0)}
-        </div>
-        <div class="stat-change" style="color:var(--text-muted)">
-          Limit: ${formatCurrency(appData?.dailyLossLimit || 50)}
-        </div>
-      </div>
-    </div>
-    
-    <div class="section animate-in delay-1">
-      <div class="section-header">
-        <div class="section-title">${icons.activity} Recent Activity</div>
-        <button class="btn btn-outline" onclick="setScreen('trades')" style="padding:8px 16px;font-size:12px;">
-          View All
-        </button>
-      </div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Side</th>
-              <th>Symbol</th>
-              <th>Amount</th>
-              <th>Entry Price</th>
-              <th>Stop Loss</th>
-              <th>Take Profit</th>
-              <th>Status</th>
-              <th>Time</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${tradesList.slice(0, 5).map(t => `
-              <tr>
-                <td><span class="tag tag-${t.side}">${t.side.toUpperCase()}</span></td>
-                <td><strong>${t.symbol}</strong></td>
-                <td class="cell-mono">${formatCurrency(t.amount)}</td>
-                <td class="cell-mono">${t.entryPrice ? '$' + t.entryPrice.toFixed(2) : '--'}</td>
-                <td class="cell-mono" style="color:var(--danger)">${t.sl || '--'}</td>
-                <td class="cell-mono" style="color:var(--success)">${t.tp || '--'}</td>
-                <td><span class="tag tag-filled">${t.status.toUpperCase()}</span></td>
-                <td style="color:var(--text-muted)">${formatDate(t.createdAt)}</td>
-              </tr>
-            `).join('') || `
-              <tr><td colspan="8">
-                <div class="empty">
-                  <div class="empty-icon">📊</div>
-                  <div style="font-size:15px;font-weight:600;margin-bottom:4px;">No trades yet</div>
-                  <div style="font-size:13px">Signals will appear here when AlgoTrend fires</div>
-                </div>
-              </td></tr>
-            `}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  `;
-}
-
-function renderTrades() {
-  return `
-    <div class="section animate-in">
-      <div class="section-header">
-        <div class="section-title">${icons.table} Complete Trade History</div>
-        <div style="color:var(--text-muted);font-size:13px;">${tradesList.length} total executions</div>
-      </div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Side</th>
-              <th>Symbol</th>
-              <th>Amount</th>
-              <th>Entry</th>
-              <th>SL</th>
-              <th>TP</th>
-              <th>PnL</th>
-              <th>Status</th>
-              <th>Timestamp</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${tradesList.map(t => `
-              <tr>
-                <td class="cell-mono" style="color:var(--text-muted)">#${t.id}</td>
-                <td><span class="tag tag-${t.side}">${t.side.toUpperCase()}</span></td>
-                <td><strong>${t.symbol}</strong></td>
-                <td class="cell-mono">${formatCurrency(t.amount)}</td>
-                <td class="cell-mono">${t.entryPrice ? '$' + t.entryPrice.toFixed(2) : '--'}</td>
-                <td class="cell-mono" style="color:var(--danger)">${t.sl || '--'}</td>
-                <td class="cell-mono" style="color:var(--success)">${t.tp || '--'}</td>
-                <td class="cell-mono ${(t.pnl || 0) >= 0 ? 'positive' : 'negative'}">${t.pnl ? formatCurrency(t.pnl) : '--'}</td>
-                <td><span class="tag tag-filled">${t.status.toUpperCase()}</span></td>
-                <td style="color:var(--text-muted);font-size:12px;">${formatDate(t.createdAt)}</td>
-              </tr>
-            `).join('') || `
-              <tr><td colspan="10">
-                <div class="empty">
-                  <div class="empty-icon">📊</div>
-                  <div>No trades recorded</div>
-                </div>
-              </td></tr>
-            `}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  `;
-}
-
-function renderAnalytics(stats, winRate) {
-  return `
-    <div class="stats-grid animate-in" style="grid-template-columns:repeat(3,1fr);">
-      <div class="stat-card">
-        <div class="stat-label">Win Rate</div>
-        <div class="stat-value ${winRate >= 50 ? 'positive' : 'negative'}">${winRate}%</div>
-      </div>
-      <div class="stat-card positive">
-        <div class="stat-label">Winning Trades</div>
-        <div class="stat-value positive">${stats.wins || 0}</div>
-      </div>
-      <div class="stat-card negative">
-        <div class="stat-label">Losing Trades</div>
-        <div class="stat-value negative">${stats.losses || 0}</div>
-      </div>
-    </div>
-    
-    <div class="section animate-in delay-1">
-      <div class="section-header">
-        <div class="section-title">${icons.activity} Equity Curve</div>
-      </div>
-      <div class="chart-container">
-        <canvas id="equityChart"></canvas>
-      </div>
-    </div>
-  `;
-}
-
-function renderSettings() {
-  const isActive = appData?.autoTrade && !appData?.circuitOpen;
-  
-  return `
-    <div class="section animate-in" style="max-width:600px;">
-      <div class="section-header">
-        <div class="section-title">${icons.settings} Bot Configuration</div>
-      </div>
-      <div style="padding:24px;">
-        <div style="display:flex;flex-direction:column;gap:20px;">
-          
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:16px;background:var(--bg-hover);border-radius:var(--radius-md);border:1px solid var(--border);">
-            <div>
-              <div style="font-weight:600;margin-bottom:4px;">System Status</div>
-              <div style="font-size:13px;color:var(--text-muted);">${isActive ? 'Active and monitoring' : 'Trading is currently halted'}</div>
-            </div>
-            <div class="status-dot ${isActive ? '' : 'offline'}" style="position:relative;"></div>
-          </div>
-          
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-            <div style="padding:16px;background:var(--bg-hover);border-radius:var(--radius-md);border:1px solid var(--border);">
-              <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Exchange</div>
-              <div style="font-weight:700;font-size:18px;">${appData?.exchange?.toUpperCase() || 'OKX'}</div>
-            </div>
-            <div style="padding:16px;background:var(--bg-hover);border-radius:var(--radius-md);border:1px solid var(--border);">
-              <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Mode</div>
-              <div style="font-weight:700;font-size:18px;color:${appData?.paperTrading ? 'var(--info)' : 'var(--danger)'}">${appData?.paperTrading ? 'Paper Trading' : 'LIVE'}</div>
-            </div>
-            <div style="padding:16px;background:var(--bg-hover);border-radius:var(--radius-md);border:1px solid var(--border);">
-              <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Max Position</div>
-              <div style="font-weight:700;font-size:18px;">${formatCurrency(appData?.maxPosition || 100)}</div>
-            </div>
-            <div style="padding:16px;background:var(--bg-hover);border-radius:var(--radius-md);border:1px solid var(--border);">
-              <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Daily Loss Limit</div>
-              <div style="font-weight:700;font-size:18px;color:var(--danger)">${formatCurrency(appData?.dailyLossLimit || 50)}</div>
-            </div>
-          </div>
-          
-          <div style="padding:16px;background:var(--bg-hover);border-radius:var(--radius-md);border:1px solid var(--border);">
-            <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Webhook Endpoint</div>
-            <div style="font-family:var(--font-mono);font-size:13px;color:var(--accent);word-break:break-all;">${window.location.origin}/webhook</div>
-          </div>
-          
-          <div style="display:flex;gap:12px;margin-top:8px;">
-            <button class="btn btn-danger" onclick="killSwitch()" style="flex:1;">
-              ${icons.alert} HALT ALL TRADING
-            </button>
-          </div>
-          
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-function setScreen(screen) {
-  currentScreen = screen;
-  render();
-}
-
-// Init
+// Start
 fetchData();
 setInterval(fetchData, 5000);
 </script>
