@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: btc-trader
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /api/status
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: EXCHANGE
+        value: okx
+      - key: WEBHOOK_SECRET
+        value: ragnar
+      - key: MAX_POSITION_USDT
+        value: 100
+      - key: DAILY_LOSS_LIMIT_USDT
+        value: 50
+      - key: ENABLE_AUTO_TRADE
+        value: true
+      - key: USE_TESTNET
+        value: false
+      - key: PAPER_TRADING
+        value: true
+      - key: API_KEY
+        sync: false
+      - key: API_SECRET
+        sync: false
+      - key: API_PASSPHRASE
+        sync: false

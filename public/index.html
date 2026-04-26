@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BTC Trader Dashboard</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #0b0e11; color: #eaecef; padding: 20px; }
+  .container { max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 24px; margin-bottom: 20px; color: #f0b90b; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px; }
+  .card { background: #1e2329; border-radius: 12px; padding: 20px; border: 1px solid #2b3139; }
+  .card h3 { font-size: 12px; text-transform: uppercase; color: #848e9c; margin-bottom: 8px; }
+  .card .value { font-size: 22px; font-weight: 700; }
+  .green { color: #0ecb81; }
+  .red { color: #f6465d; }
+  .yellow { color: #f0b90b; }
+  button { background: #f0b90b; color: #0b0e11; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 700; cursor: pointer; width: 100%; margin-top: 10px; }
+  button.off { background: #f6465d; color: white; }
+  table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px; }
+  th, td { padding: 10px; text-align: left; border-bottom: 1px solid #2b3139; }
+  th { color: #848e9c; text-transform: uppercase; font-size: 11px; }
+  .status { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; }
+  .status.on { background: rgba(14,203,129,0.15); color: #0ecb81; }
+  .status.off { background: rgba(246,70,93,0.15); color: #f6465d; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>BTC Auto Trader</h1>
+  
+  <div class="grid">
+    <div class="card">
+      <h3>Bot Status</h3>
+      <div class="value" id="botStatus"><span class="status on">ACTIVE</span></div>
+    </div>
+    <div class="card">
+      <h3>USDT Balance</h3>
+      <div class="value" id="balance">--</div>
+    </div>
+    <div class="card">
+      <h3>Today's Loss</h3>
+      <div class="value red" id="todayLoss">--</div>
+    </div>
+    <div class="card">
+      <h3>Open Positions</h3>
+      <div class="value" id="positions">--</div>
+    </div>
+    <div class="card">
+      <h3>Total PnL</h3>
+      <div class="value" id="totalPnl">--</div>
+    </div>
+    <div class="card">
+      <h3>Win Rate</h3>
+      <div class="value" id="winRate">--</div>
+    </div>
+  </div>
+
+  <button class="off" onclick="killSwitch()">HALT ALL TRADING</button>
+
+  <h2 style="margin-top:30px;font-size:16px;color:#848e9c;">Recent Trades</h2>
+  <table>
+    <thead>
+      <tr><th>Time</th><th>Side</th><th>Symbol</th><th>Amount</th><th>Entry</th><th>SL</th><th>TP</th><th>Status</th></tr>
+    </thead>
+    <tbody id="tradesBody"><tr><td colspan="8">Loading...</td></tr></tbody>
+  </table>
+</div>
+
+<script>
+const API = window.location.origin;
+
+async function load() {
+  try {
+    const res = await fetch(`${API}/api/status`);
+    const data = await res.json();
+    
+    document.getElementById('botStatus').innerHTML = 
+      data.circuitOpen 
+        ? '<span class="status off">HALTED</span>' 
+        : '<span class="status on">ACTIVE</span>';
+    document.getElementById('balance').innerText = `$${(data.balance?.usdt || 0).toFixed(2)}`;
+    document.getElementById('todayLoss').innerText = `-$${(data.dailyLoss || 0).toFixed(2)}`;
+    document.getElementById('positions').innerText = data.openPositions?.length || 0;
+    
+    const stats = data.stats || {};
+    const pnl = stats.totalPnl || 0;
+    document.getElementById('totalPnl').innerHTML = `<span class="${pnl >= 0 ? 'green' : 'red'}">$${pnl.toFixed(2)}</span>`;
+    
+    const wr = stats.totalTrades > 0 ? ((stats.wins / stats.totalTrades) * 100).toFixed(1) + '%' : 'N/A';
+    document.getElementById('winRate').innerText = wr;
+  } catch(e) { console.error(e); }
+}
+
+async function loadTrades() {
+  try {
+    const res = await fetch(`${API}/api/trades?limit=20`);
+    const rows = await res.json();
+    const tbody = document.getElementById('tradesBody');
+    if (!rows.length) { tbody.innerHTML = '<tr><td colspan="8">No trades yet</td></tr>'; return; }
+    tbody.innerHTML = rows.map(t => `
+      <tr>
+        <td>${new Date(t.createdAt).toLocaleString()}</td>
+        <td class="${t.side==='buy'?'green':'red'}">${t.side.toUpperCase()}</td>
+        <td>${t.symbol}</td>
+        <td>$${t.amount.toFixed(2)}</td>
+        <td>${t.entryPrice ? t.entryPrice.toFixed(2) : '--'}</td>
+        <td>${t.sl || '--'}</td>
+        <td>${t.tp || '--'}</td>
+        <td><span class="status ${t.status==='filled'?'on':'off'}">${t.status}</span></td>
+      </tr>
+    `).join('');
+  } catch(e) { console.error(e); }
+}
+
+async function killSwitch() {
+  if(!confirm('HALT all trading immediately?')) return;
+  await fetch(`${API}/api/kill`, {method:'POST'});
+  load();
+}
+
+load(); loadTrades();
+setInterval(() => { load(); loadTrades(); }, 5000);
+</script>
+</body>
+</html>

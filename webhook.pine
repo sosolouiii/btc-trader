@@ -1,0 +1,47 @@
+// ============================================================================
+// WEBHOOK BRIDGE — Paste this at the BOTTOM of your AlgoTrend Pine Script
+// (After the dashboard section)
+// ============================================================================
+// IMPORTANT: This uses the EXACT variables from your AlgoTrend strategy
+// signal_long, signal_short, sl_price, tp_price
+// ============================================================================
+
+// --- CONFIGURATION ---
+// Replace 'your_random_secret_here' with the same value in your backend .env
+string webhook_secret = "your_random_secret_here"
+
+// --- LONG SIGNAL WEBHOOK ---
+// Fires only when a confirmed long signal happens and bar closes
+if signal_long and barstate.isconfirmed
+    string json_long = '{"secret":"' + webhook_secret + '","symbol":"' + syminfo.ticker + '","side":"buy","amount":100,"sl":' + str.tostring(sl_price) + ',"tp":' + str.tostring(tp_price) + ',"message":"AlgoTrend Long"}'
+    alert(json_long, alert.freq_once_per_bar)
+
+// --- SHORT SIGNAL WEBHOOK ---
+// Fires only when a confirmed short signal happens and bar closes
+if signal_short and barstate.isconfirmed
+    string json_short = '{"secret":"' + webhook_secret + '","symbol":"' + syminfo.ticker + '","side":"sell","amount":100,"sl":' + str.tostring(sl_price) + ',"tp":' + str.tostring(tp_price) + ',"message":"AlgoTrend Short"}'
+    alert(json_short, alert.freq_once_per_bar)
+
+// ============================================================================
+// TRADINGVIEW ALERT SETUP INSTRUCTIONS:
+// 1. Open Alerts panel (clock icon on right sidebar)
+// 2. Click "Create Alert"
+// 3. Condition: Select your indicator -> Alert() function calls
+// 4. Message: LEAVE BLANK (Pine Script 'alert()' fills this automatically)
+// 5. Webhook URL: Paste your public server URL
+//    Example: https://your-ngrok-url.com/webhook
+// 6. Frequency: Once Per Bar Close
+// 7. Name it: "AlgoTrend Webhook"
+// 8. Click "Create"
+//
+// PAYLOAD SENT TO YOUR SERVER (JSON):
+// {
+//   "secret": "your_random_secret_here",
+//   "symbol": "BTCUSDT",
+//   "side": "buy",
+//   "amount": 100,
+//   "sl": 65000.5,
+//   "tp": 72000.0,
+//   "message": "AlgoTrend Long"
+// }
+// ============================================================================
