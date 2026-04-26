@@ -1,4 +1,4 @@
-# BTC Auto Trader
+# SOSO BTC MAGNET
 
 TradingView webhook → Node.js → Bybit/Binance/OKX API.
 
@@ -98,7 +98,7 @@ TradingView Alert (JSON via Webhook)
   "amount": 100,
   "sl": 65000.5,
   "tp": 72000.0,
-  "message": "AlgoTrend Long"
+  "message": "SOSO Long"
 }
 ```
 

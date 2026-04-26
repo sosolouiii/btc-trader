@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: btc-trader
+    name: soso-btc-magnet
     runtime: node
     plan: free
     buildCommand: npm install

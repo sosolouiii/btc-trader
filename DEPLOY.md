@@ -13,7 +13,7 @@ This opens a browser tab. Click **Authorize**.
 cd /Users/richytakashi/btc-trader
 railway init
 ```
-Choose **Empty Project**, name it `btc-trader`.
+Choose **Empty Project**, name it `soso-btc-magnet`.
 
 ### Step 3: Add environment variables
 ```bash
@@ -38,11 +38,11 @@ railway up
 ```bash
 railway domain
 ```
-Copy the URL (e.g., `https://btc-trader.up.railway.app`).
+Copy the URL (e.g., `https://soso-btc-magnet.up.railway.app`).
 
 Your webhook URL will be:
 ```
-https://btc-trader.up.railway.app/webhook
+https://soso-btc-magnet.up.railway.app/webhook
 ```
 
 Paste this into TradingView.
@@ -61,7 +61,7 @@ git commit -m "Initial deploy"
 
 Create a new repo on GitHub, then:
 ```bash
-git remote add origin https://github.com/YOUR_USERNAME/btc-trader.git
+git remote add origin https://github.com/YOUR_USERNAME/soso-btc-magnet.git
 git branch -M main
 git push -u origin main
 ```
@@ -83,7 +83,7 @@ Render auto-deploys on every git push.
 
 Your webhook URL will be:
 ```
-https://btc-trader.onrender.com/webhook
+https://soso-btc-magnet.onrender.com/webhook
 ```
 
 ---

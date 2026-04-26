@@ -1,7 +1,7 @@
 {
-  "name": "btc-trader",
+  "name": "soso-btc-magnet",
   "version": "1.0.0",
-  "description": "TradingView Webhook to Binance Auto-Trader",
+  "description": "SOSO BTC MAGNET — TradingView webhook auto-trader",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

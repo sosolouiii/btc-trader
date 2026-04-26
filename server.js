@@ -126,6 +126,6 @@ app.post('/api/kill', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`BTC Trader running on port ${PORT}`);
+  console.log(`SOSO BTC MAGNET running on port ${PORT}`);
   console.log(`Auto-trade: ${AUTO_TRADE ? 'ON' : 'OFF'} | Testnet: ${process.env.USE_TESTNET === 'true' ? 'YES' : 'NO'} | Paper: ${PAPER_TRADING ? 'YES' : 'NO'}`);
 });

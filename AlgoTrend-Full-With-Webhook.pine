@@ -590,9 +590,9 @@ if show_dashboard
 string webhook_secret = "ragnar"
 
 if signal_long and barstate.isconfirmed
-    string json_long = '{"secret":"' + webhook_secret + '","symbol":"' + syminfo.ticker + '","side":"buy","amount":100,"sl":' + str.tostring(sl_price) + ',"tp":' + str.tostring(tp_price) + ',"message":"AlgoTrend Long"}'
+    string json_long = '{"secret":"' + webhook_secret + '","symbol":"' + syminfo.ticker + '","side":"buy","amount":100,"sl":' + str.tostring(sl_price) + ',"tp":' + str.tostring(tp_price) + ',"message":"SOSO Long"}'
     alert(json_long, alert.freq_once_per_bar)
 
 if signal_short and barstate.isconfirmed
-    string json_short = '{"secret":"' + webhook_secret + '","symbol":"' + syminfo.ticker + '","side":"sell","amount":100,"sl":' + str.tostring(sl_price) + ',"tp":' + str.tostring(tp_price) + ',"message":"AlgoTrend Short"}'
+    string json_short = '{"secret":"' + webhook_secret + '","symbol":"' + syminfo.ticker + '","side":"sell","amount":100,"sl":' + str.tostring(sl_price) + ',"tp":' + str.tostring(tp_price) + ',"message":"SOSO Short"}'
     alert(json_short, alert.freq_once_per_bar)
