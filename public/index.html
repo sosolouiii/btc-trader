@@ -946,7 +946,7 @@ function renderDashboard() {
       <div class="table-wrap">
         <table>
           <thead>
-            <tr><th>Side</th><th>Symbol</th><th>Amount</th><th>Entry</th><th>SL</th><th>TP</th><th>Status</th><th>Time</th></tr>
+            <tr><th>Side</th><th>Symbol</th><th>Lots</th><th>Entry</th><th>SL</th><th>TP</th><th>Status</th><th>Time</th></tr>
           </thead>
           <tbody id="dashboard-trades-tbody">
             ${renderTradeRows(tradesList.slice(0, 5))}
@@ -972,7 +972,7 @@ function renderTrades() {
       <div class="table-wrap">
         <table>
           <thead>
-            <tr><th>ID</th><th>Side</th><th>Symbol</th><th>Amount</th><th>Entry</th><th>SL</th><th>TP</th><th>PnL</th><th>Status</th><th>Timestamp</th></tr>
+            <tr><th>ID</th><th>Side</th><th>Symbol</th><th>Lots</th><th>Entry</th><th>SL</th><th>TP</th><th>PnL</th><th>Status</th><th>Timestamp</th></tr>
           </thead>
           <tbody id="trades-tbody">
             ${renderTradeRows(tradesList, true)}
@@ -999,7 +999,7 @@ function renderTradeRows(trades, full = false) {
       ${full ? `<td class="cell-mono" style="color:var(--text-muted)">#${t.id}</td>` : ''}
       <td><span class="tag tag-${t.side}">${t.side.toUpperCase()}</span></td>
       <td><strong>${t.symbol}</strong></td>
-      <td class="cell-mono">${formatCurrency(t.amount)}</td>
+      <td class="cell-mono">${t.amount.toFixed(2)}</td>
       <td class="cell-mono">${t.entryPrice ? '$' + t.entryPrice.toFixed(2) : '--'}</td>
       <td class="cell-mono" style="color:var(--danger)">${t.sl || '--'}</td>
       <td class="cell-mono" style="color:var(--success)">${t.tp || '--'}</td>
@@ -1181,7 +1181,7 @@ async function sendTestSignal() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         secret: 'ragnar', symbol: 'BTCUSDT', side: 'buy',
-        amount: 100, sl: 65000, tp: 72000, message: 'Test Signal'
+        amount: 0.05, sl: 65000, tp: 72000, message: 'Test Signal'
       })
     });
     const json = await res.json();

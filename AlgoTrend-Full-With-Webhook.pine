@@ -35,7 +35,7 @@ trailingStop    = input.bool(false, "Use Trailing Stop", group=groupRisk)
 // Webhook
 webhookUrl      = input.string("", "Webhook URL", tooltip="MUST end with /webhook", group=groupWebhook)
 webhookSecret   = input.string("ragnar", "Webhook Secret", group=groupWebhook)
-webhookAmount   = input.int(100, "Trade Size (USDT)", minval=10, group=groupWebhook)
+webhookAmount   = input.float(0.05, "Lot Size", minval=0.01, step=0.01, group=groupWebhook)
 
 // ═══════════════════════════════════════════════════════════════════════════
 // CALCULATIONS
