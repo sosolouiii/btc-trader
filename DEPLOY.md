@@ -42,10 +42,11 @@ Copy the URL (e.g., `https://soso-btc-magnet.up.railway.app`).
 
 Your webhook URL will be:
 ```
-https://soso-btc-magnet.up.railway.app/webhook
+https://btc-trader.up.railway.app/webhook
 ```
 
-Paste this into TradingView.
+**⚠️ CRITICAL: The URL MUST end with `/webhook`.**  
+Without `/webhook`, TradingView will show "delivery failed".
 
 ---
 
@@ -85,6 +86,9 @@ Your webhook URL will be:
 ```
 https://soso-btc-magnet.onrender.com/webhook
 ```
+
+**⚠️ CRITICAL: The URL MUST end with `/webhook`.**  
+Without `/webhook`, TradingView will show "delivery failed".
 
 ---
 

@@ -46,14 +46,21 @@ Dashboard: `http://localhost:3000`
 ```bash
 npx ngrok http 3000
 ```
-Copy the **HTTPS** URL into your TradingView alert webhook field.
+Copy the **HTTPS** URL + `/webhook` into your TradingView alert webhook field.
+
+**CRITICAL:** The URL **MUST** end with `/webhook`:
+```
+WRONG:  https://your-url.com
+RIGHT:  https://your-url.com/webhook
+```
 
 ### 5. TradingView Alert Setup
 1. Open Alerts panel (clock icon)
 2. Create Alert
 3. **Condition:** Your indicator → `Alert() function calls`
 4. **Message:** Leave BLANK
-5. **Webhook URL:** Paste your ngrok HTTPS URL + `/webhook`
+5. **Webhook URL:** Paste your URL + `/webhook`  
+   **⚠️ MUST end with `/webhook` — or you'll get "delivery failed"**
 6. **Frequency:** Once Per Bar Close
 7. Click Create
 

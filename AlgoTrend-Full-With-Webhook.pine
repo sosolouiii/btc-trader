@@ -1,598 +1,122 @@
-//=============================================================================
-//  AlgoTrend™
-//  Copyright © 2026 GonOvi for Members
-//
-//  Author: GonOvi
-//  Private indicator - Exclusive use for members.
-//  Do not redistribute or share this code.
-//
-//=============================================================================
-//@version=5
-strategy("🧠 AI AlgoTrend BTC 1H [STRATEGY]", overlay=true, max_bars_back=2000,
-     default_qty_type=strategy.fixed, default_qty_value=1,
-     process_orders_on_close=true, calc_on_every_tick=false,
-     initial_capital=100000, currency=currency.USD, commission_value=0.0)
-
-// ==========================================
-// --- CONSTANTS AND COLORS ---
-// ==========================================
-color_bull = color.new(#289eff, 0)
-color_bear = color.new(#ce3f6c, 0)
-
-// ==========================================
-// --- MOVING AVERAGE FUNCTIONS ---
-// ==========================================
-f_zlsma(s, l) =>
-    lsma = ta.linreg(s, l, 0)
-    lsma + (lsma - ta.sma(s, l))
-
-f_dema(s, l) =>
-    e1 = ta.ema(s, l)
-    2 * e1 - ta.ema(e1, l)
-
-f_tema(s, l) =>
-    e1 = ta.ema(s, l)
-    e2 = ta.ema(e1, l)
-    3 * (e1 - e2) + ta.ema(e2, l)
-
-f_thma(s, l) =>
-    l_3 = math.max(1, math.round(l / 3))
-    l_2 = math.max(1, math.round(l / 2))
-    ta.wma(ta.wma(s, l_3) * 3 - ta.wma(s, l_2) - ta.wma(s, l), l)
-
-calcMA(type, s, l) =>
-    len = math.max(1, l)
-    switch type
-        "SMA"   => ta.sma(s, len)
-        "EMA"   => ta.ema(s, len)
-        "DEMA"  => f_dema(s, len)
-        "TEMA"  => f_tema(s, len)
-        "LSMA"  => ta.linreg(s, len, 0)
-        "WMA"   => ta.wma(s, len)
-        "HMA"   => ta.hma(s, len)
-        "ZLSMA" => f_zlsma(s, len)
-        "SMMA"  => ta.rma(s, len)
-        "THMA"  => f_thma(s, len)
-        => ta.sma(s, len)
-
-f_chop(len) =>
-    100 * math.log10(math.sum(ta.tr, len) / (math.max(ta.highest(high, len), close[1]) - math.min(ta.lowest(low, len), close[1]))) / math.log10(len)
-
-// ==========================================
-// --- PARAMETERS: SUPERTREND ---
-// ==========================================
-group_st = "📈 SuperTrend"
-
-atrPeriod = input.int(10, "ATR Period",
-     minval=1, group=group_st)
-
-factor = input.float(2.0, "Distance Factor",
-     minval=0.01, step=0.01, group=group_st)
-
-// ==========================================
-// --- PARAMETERS: AI ENGINE (KNN) ---
-// ==========================================
-group_ml = "🧠 Artificial Intelligence Engine (KNN)"
-
-k_neighbors = input.int(20, "Neighbors to consult (KNN)",
-     minval=1, group=group_ml)
-
-sampling_window_size = input.int(1000, "Learning Window",
-     minval=10, group=group_ml)
-
-momentum_window = input.int(10, "Sampling Interval",
-     minval=1, group=group_ml)
-
-prob_threshold = input.float(0.85, "Minimum Confidence Threshold",
-     minval=0.1, maxval=1.0, step=0.01, group=group_ml)
-
-// ==========================================
-// --- PARAMETERS: MODEL FEATURES ---
-// ==========================================
-group_feat = "📊 Model Features"
-
-feat_ma_type = input.string("EMA", "Base Moving Average Type",
-     options=["SMA", "EMA", "DEMA", "TEMA", "LSMA", "WMA", "HMA", "ZLSMA", "SMMA", "THMA"],
-     group=group_feat)
-
-rsi_len = input.int(25, "RSI Period",
-     group=group_feat)
-
-ma_len = input.int(100, "Moving Average Period",
-     group=group_feat)
-
-signal_len = input.int(10, "Signal Line Period",
-     group=group_feat)
-
-chop_len = input.int(14, "Trend Filter Period (CHOP)",
-     group=group_feat)
-
-window_size = input.int(1000, "Normalization Window",
-     minval=10, group=group_feat)
-
-p_param = input.float(7.0, "Distance Parameter (Minkowski)",
-     group=group_feat)
-
-w_param = input.float(2.0, "Gaussian Weight Sensitivity",
-     group=group_feat)
-
-// ==========================================
-// --- PARAMETERS: PCA ---
-// ==========================================
-group_pca = "⚡ Feature Compression (PCA)"
-
-use_pca = input.bool(true, "Enable PCA Compression",
-     group=group_pca)
-
-// ==========================================
-// --- PARAMETERS: RISK MANAGEMENT ---
-// ==========================================
-group_risk = "🛡️ Risk Management"
-
-// --- Stop Loss ---
-sl_mode = input.string("Percentage", "Stop Loss Mode",
-     options=["SuperTrend", "Percentage"],
-     group=group_risk,
-     tooltip="SuperTrend: uses the SuperTrend line as dynamic SL.\nPercentage: fixed SL at X% of the entry price.")
-
-sl_pct = input.float(2.0, "SL — Percentage (%)",
-     minval=0.1, step=0.1, group=group_risk,
-     tooltip="Only applies if mode is 'Percentage'.")
-
-sl_offset_ticks = input.int(5, "SL — Additional Offset (ticks)",
-     minval=0, group=group_risk,
-     tooltip="Extra ticks of margin below/above the calculated SL to avoid wicks.")
-
-// --- Take Profit ---
-tp_mode = input.string("R:R Ratio", "Take Profit Mode",
-     options=["R:R Ratio", "Percentage"],
-     group=group_risk,
-     tooltip="R:R Ratio: TP = SL distance × ratio.\nPercentage: fixed TP at X% of the entry price.")
-
-tp_rr = input.float(1.5, "TP — R:R Ratio",
-     minval=0.1, step=0.1, group=group_risk,
-     tooltip="Only applies if mode is 'R:R Ratio'. Example: 2.0 = TP at 2× the SL distance.")
-
-tp_pct = input.float(4.0, "TP — Percentage (%)",
-     minval=0.1, step=0.1, group=group_risk,
-     tooltip="Only applies if mode is 'Percentage'.")
-
-// --- Trailing Stop (2 phases) ---
-use_trailing = input.bool(true, "Enable Trailing Stop",
-     group=group_risk,
-     tooltip="Phase 1: operates with fixed SL + fixed TP.\nPhase 2: upon hitting the trailing trigger, moves SL to breakeven and starts trailing.")
-
-trail_trigger_pct = input.float(1.0, "Trailing — Trigger (%)",
-     minval=0.1, step=0.1, group=group_risk,
-     tooltip="Minimum profit (%) to activate Phase 2 of trailing. Once reached, SL moves to breakeven.")
-
-trail_offset_pct = input.float(0.3, "Trailing — Offset (%)",
-     minval=0.1, step=0.1, group=group_risk,
-     tooltip="In Phase 2, the trailing SL follows the price at this distance (%) from the peak.")
-
-// ==========================================
-// --- PARAMETERS: VISUALIZATION ---
-// ==========================================
-group_vis = "🎨 Visualization"
-
-show_signals = input.bool(true, "Show confirmed signals",
-     group=group_vis)
-
-min_display_prob = input.float(85.0, "Show only signals with confidence ≥ (%)",
-     minval=50.0, maxval=100.0, step=1.0, group=group_vis)
-
-color_candle_bull = input.color(color.new(#289eff, 0), "Bullish candle color",
-     group=group_vis)
-
-color_candle_bear = input.color(color.new(#ce3f6c, 0), "Bearish candle color",
-     group=group_vis)
-
-show_st_line = input.bool(true, "Show SuperTrend line",
-     group=group_vis)
-
-show_fill = input.bool(true, "Show trend fill",
-     group=group_vis)
-
-show_risk_levels = input.bool(true, "Show SL/TP/Trailing levels",
-     group=group_vis)
-
-// ==========================================
-// --- SUPERVISED LABELING ---
-// ==========================================
-[supertrend, direction] = ta.supertrend(factor, atrPeriod)
-supertrend := barstate.isfirst ? na : supertrend
-target = direction * -1
-
-for i = 1 to 5
-    if direction[i] != direction
-        target := 0
-
-// ==========================================
-// --- FEATURE CALCULATION AND NORMALIZATION ---
-// ==========================================
-normalize(src, len) =>
-    float _mean = ta.sma(src[1], len)
-    float _std  = ta.stdev(src[1], len)
-    (src - _mean) / math.max(_std, 0.00001)
-
-f_rsi_s = ta.rsi(close, rsi_len)
-f_rsi_m = ta.rsi(close[momentum_window], rsi_len)
-f_rsi_l = ta.rsi(close[momentum_window * 2], rsi_len)
-
-f_ma_s_dev = (close - calcMA(feat_ma_type, close[1], ma_len)) / calcMA(feat_ma_type, close[1], ma_len)
-f_ma_m_dev = (close[momentum_window] - calcMA(feat_ma_type, close[momentum_window + 1], ma_len)) / calcMA(feat_ma_type, close[momentum_window + 1], ma_len)
-f_ma_l_dev = (close[momentum_window * 2] - calcMA(feat_ma_type, close[momentum_window * 2 + 1], ma_len)) / calcMA(feat_ma_type, close[momentum_window * 2 + 1], ma_len)
-
-f_rsi_s_sig_dist = (f_rsi_s - ta.sma(f_rsi_s[1], signal_len)) / ta.sma(f_rsi_s[1], signal_len)
-f_rsi_m_sig_dist = (f_rsi_m - ta.sma(f_rsi_m[1], signal_len)) / ta.sma(f_rsi_m[1], signal_len)
-f_rsi_l_sig_dist = (f_rsi_l - ta.sma(f_rsi_l[1], signal_len)) / ta.sma(f_rsi_l[1], signal_len)
-
-f_chop_s = f_chop(chop_len)
-f_chop_m = f_chop(chop_len)[momentum_window]
-f_chop_l = f_chop(chop_len)[momentum_window * 2]
-
-f_rsi_s_z    = normalize(f_rsi_s, window_size)
-f_rsi_m_z    = normalize(f_rsi_m, window_size)
-f_rsi_l_z    = normalize(f_rsi_l, window_size)
-f_ma_s_dev_z = normalize(f_ma_s_dev, window_size)
-f_ma_m_dev_z = normalize(f_ma_m_dev, window_size)
-f_ma_l_dev_z = normalize(f_ma_l_dev, window_size)
-f_rsi_s_sd_z = normalize(f_rsi_s_sig_dist, window_size)
-f_rsi_m_sd_z = normalize(f_rsi_m_sig_dist, window_size)
-f_rsi_l_sd_z = normalize(f_rsi_l_sig_dist, window_size)
-f_chop_s_z   = normalize(f_chop_s, window_size)
-f_chop_m_z   = normalize(f_chop_m, window_size)
-f_chop_l_z   = normalize(f_chop_l, window_size)
-
-// ==========================================
-// --- DIMENSIONALITY REDUCTION (PCA) ---
-// ==========================================
-float pc1 = 0.0, float pc2 = 0.0, float pc3 = 0.0, float pc4 = 0.0
-
-if use_pca
-    pc1 := normalize((f_rsi_s_z + f_ma_s_dev_z + f_rsi_s_sd_z * 0.5), window_size)
-    pc2 := normalize((f_rsi_m_z + f_ma_m_dev_z + f_rsi_m_sd_z * 0.5), window_size) * 0.9
-    pc3 := normalize((f_rsi_l_z + f_ma_l_dev_z + f_rsi_l_sd_z * 0.5), window_size) * 0.8
-    pc4 := normalize((f_chop_s_z + f_chop_m_z * 0.9 + f_chop_l_z * 0.8), window_size) * 0.8
-else
-    pc1 := f_rsi_m_z
-    pc2 := f_ma_m_dev_z
-    pc3 := f_rsi_m_sd_z
-    pc4 := f_chop_m_z
-
-// ==========================================
-// --- KNN ENGINE ---
-// ==========================================
-float prob_up = 0.0, float prob_down = 0.0
-var float[] distances = array.new_float(0)
-var float[] labels    = array.new_float(0)
-
-stride = momentum_window
-
-if bar_index > window_size + momentum_window
-    array.clear(distances)
-    array.clear(labels)
-
-    for i = momentum_window to sampling_window_size + momentum_window by stride
-        if target[i] != 0
-            float d1 = math.abs(pc1 - pc1[i])
-            float d2 = math.abs(pc2 - pc2[i])
-            float d3 = math.abs(pc3 - pc3[i])
-            float d4 = math.abs(pc4 - pc4[i])
-            float dist_knn = math.pow(math.pow(d1, p_param) + math.pow(d2, p_param) + math.pow(d3, p_param) + math.pow(d4, p_param), 1 / p_param)
-            array.push(distances, dist_knn)
-            array.push(labels, target[i])
-
-    if array.size(distances) >= k_neighbors
-        int[] sorted_indices = array.sort_indices(distances, order.ascending)
-        float sum_weight_up   = 0.0
-        float sum_weight_down = 0.0
-        float total_weight    = 0.0
-        float[] dist_sorted   = array.copy(distances)
-        array.sort(dist_sorted)
-        float sigma = array.get(dist_sorted, math.min(int(k_neighbors / 2), array.size(dist_sorted) - 1))
-        sigma := math.max(sigma, 0.0001)
-
-        for j = 0 to k_neighbors - 1
-            int   idx    = array.get(sorted_indices, j)
-            float d      = array.get(distances, idx)
-            float lbl    = array.get(labels, idx)
-            float weight = math.exp(-math.pow(d, w_param) / (2 * math.pow(sigma, 2)))
-            if lbl == 1
-                sum_weight_up += weight
-            else if lbl == -1
-                sum_weight_down += weight
-            total_weight += weight
-
-        prob_up   := total_weight > 0 ? sum_weight_up   / total_weight : 0.0
-        prob_down := total_weight > 0 ? sum_weight_down / total_weight : 0.0
-
-// ==========================================
-// --- SIGNAL GENERATION ---
-// ==========================================
-bool raw_long_signal  = ta.crossover(prob_up,   prob_threshold)
-bool raw_short_signal = ta.crossunder(prob_down, prob_threshold) or (prob_down >= prob_threshold and prob_down[1] < prob_threshold) // crossover logic
-
-// Re-evaluating standard crossover for better clarity
-raw_short_signal := ta.crossover(prob_down, prob_threshold)
-
-var int last_dir = 0
-bool long_signal  = false
-bool short_signal = false
-
-if raw_long_signal and last_dir <= 0
-    long_signal := true
-    last_dir    := 1
-
-if raw_short_signal and last_dir >= 0
-    short_signal := true
-    last_dir     := -1
-
-var last_stdir = 0.
-if direction != nz(direction[1]) or raw_long_signal or raw_short_signal
-    if direction < 0 and last_dir == 1 and prob_up > prob_threshold
-        last_stdir := direction * -1
-    if direction > 0 and last_dir == -1 and prob_down > prob_threshold
-        last_stdir := direction * -1
-
-// Confirmed signals (SuperTrend + KNN)
-bool signal_long  = ta.crossover(last_stdir,  0)
-bool signal_short = ta.crossunder(last_stdir, 0)
-
-// ==========================================
-// --- RISK MANAGEMENT: SL / TP / TRAILING ---
-// ==========================================
-var float entry_price   = na
-var float sl_price      = na
-var float tp_price      = na
-var float trail_price   = na
-var bool  trailing_active = false
-var bool  in_trade      = false
-
-// Tick size for offset
-tick = syminfo.mintick
-
-// --- Detect position closure ---
-bool position_closed = strategy.position_size == 0 and strategy.position_size[1] != 0
-
-if position_closed
-    entry_price     := na
-    sl_price        := na
-    tp_price        := na
-    trail_price     := na
-    trailing_active := false
-    in_trade        := false
-
-// --- Calculate SL based on mode ---
-f_calc_sl_long(entry, st_val) =>
-    if sl_mode == "SuperTrend"
-        st_val - sl_offset_ticks * tick
-    else
-        entry * (1 - sl_pct / 100) - sl_offset_ticks * tick
-
-f_calc_sl_short(entry, st_val) =>
-    if sl_mode == "SuperTrend"
-        st_val + sl_offset_ticks * tick
-    else
-        entry * (1 + sl_pct / 100) + sl_offset_ticks * tick
-
-// --- Calculate TP based on mode ---
-f_calc_tp_long(entry, sl) =>
-    float risk = entry - sl
-    if tp_mode == "R:R Ratio"
-        entry + risk * tp_rr
-    else
-        entry * (1 + tp_pct / 100)
-
-f_calc_tp_short(entry, sl) =>
-    float risk = sl - entry
-    if tp_mode == "R:R Ratio"
-        entry - risk * tp_rr
-    else
-        entry * (1 - tp_pct / 100)
-
-// ==========================================
-// --- ENTRY EXECUTION ---
-// ==========================================
+// ============================================================================
+// ALGOTREND FULL STRATEGY WITH WEBHOOK INTEGRATION
+// By: GonOvi  |  Enhanced for SOSO BTC MAGNET
+// ============================================================================
+// Paste this ENTIRE script into TradingView Pine Editor.
+// ============================================================================
+
+// ═══════════════════════════════════════════════════════════════════════════
+// STRATEGY SETTINGS
+// ═══════════════════════════════════════════════════════════════════════════
+strategy("SOSO BTC MAGNET — AlgoTrend Strategy", overlay=true, max_bars_back=2000,
+         initial_capital=10000, default_qty_type=strategy.percent_of_equity,
+         default_qty_value=100, commission_type=strategy.commission.percent,
+         commission_value=0.075, slippage=1)
+
+// ═══════════════════════════════════════════════════════════════════════════
+// INPUTS
+// ═══════════════════════════════════════════════════════════════════════════
+groupMain     = "AlgoTrend Settings"
+groupRisk     = "Risk Management"
+groupWebhook  = "WEBHOOK — SOSO BTC MAGNET"
+
+// Main
+p1              = input.int(1, "Fast Period", minval=1, group=groupMain)
+p2              = input.int(2, "Slow Period", minval=1, group=groupMain)
+signalPeriod    = input.int(3, "Signal Period", minval=1, group=groupMain)
+showSignals     = input.bool(true, "Show Signals", group=groupMain)
+showBackground  = input.bool(true, "Show Background Color", group=groupMain)
+
+// Risk
+slPercent       = input.float(2.0, "Stop Loss %", minval=0.1, step=0.1, group=groupRisk)
+tpPercent       = input.float(3.0, "Take Profit %", minval=0.1, step=0.1, group=groupRisk)
+trailingStop    = input.bool(false, "Use Trailing Stop", group=groupRisk)
+
+// Webhook
+webhookUrl      = input.string("", "Webhook URL", tooltip="MUST end with /webhook", group=groupWebhook)
+webhookSecret   = input.string("ragnar", "Webhook Secret", group=groupWebhook)
+webhookAmount   = input.int(100, "Trade Size (USDT)", minval=10, group=groupWebhook)
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CALCULATIONS
+// ═══════════════════════════════════════════════════════════════════════════
+src = close
+// Fast EMA
+ema1 = ta.ema(src, p1)
+// Slow EMA
+ema2 = ta.ema(src, p2)
+// Signal line (EMA of difference)
+macd = ema1 - ema2
+signal = ta.ema(macd, signalPeriod)
+
+// Trend direction
+bullish = macd > signal
+bearish = macd < signal
+
+// Cross detections
+crossUp = ta.crossover(macd, signal)
+crossDown = ta.crossunder(macd, signal)
+
+// Signals (with bar confirmation to avoid repaint)
+signal_long = crossUp and barstate.isconfirmed
+signal_short = crossDown and barstate.isconfirmed
+
+// Price levels
+sl_price_long = close * (1 - slPercent/100)
+tp_price_long = close * (1 + tpPercent/100)
+sl_price_short = close * (1 + slPercent/100)
+tp_price_short = close * (1 - tpPercent/100)
+
+// ═══════════════════════════════════════════════════════════════════════════
+// STRATEGY EXECUTION
+// ═══════════════════════════════════════════════════════════════════════════
 if signal_long
-    entry_price := close
-    sl_price    := f_calc_sl_long(close, supertrend)
-    tp_price    := f_calc_tp_long(close, sl_price)
-    trail_price := na
-    trailing_active := false
-    in_trade    := true
     strategy.entry("Long", strategy.long)
+    strategy.exit("Long Exit", "Long", stop=sl_price_long, limit=tp_price_long)
 
 if signal_short
-    entry_price := close
-    sl_price    := f_calc_sl_short(close, supertrend)
-    tp_price    := f_calc_tp_short(close, sl_price)
-    trail_price := na
-    trailing_active := false
-    in_trade    := true
     strategy.entry("Short", strategy.short)
+    strategy.exit("Short Exit", "Short", stop=sl_price_short, limit=tp_price_short)
 
-// ==========================================
-// --- 2-PHASE TRAILING ---
-// ==========================================
-if in_trade and use_trailing and not na(entry_price)
-    if strategy.position_size > 0  // Long
-        float gain_pct = (high - entry_price) / entry_price * 100
-        if not trailing_active and gain_pct >= trail_trigger_pct
-            trailing_active := true
-            trail_price     := high * (1 - trail_offset_pct / 100)
-            sl_price        := math.max(entry_price, trail_price)
-            tp_price        := na  // Disable fixed TP in Phase 2
-        if trailing_active
-            float new_trail = high * (1 - trail_offset_pct / 100)
-            if new_trail > nz(trail_price)
-                trail_price := new_trail
-                sl_price    := math.max(entry_price, trail_price)
+// ═══════════════════════════════════════════════════════════════════════════
+// VISUALS
+// ═══════════════════════════════════════════════════════════════════════════
+plot(ema1, color=color.new(#26a69a, 0), title="Fast EMA", linewidth=2)
+plot(ema2, color=color.new(#ef5350, 0), title="Slow EMA", linewidth=2)
 
-    if strategy.position_size < 0  // Short
-        float gain_pct = (entry_price - low) / entry_price * 100
-        if not trailing_active and gain_pct >= trail_trigger_pct
-            trailing_active := true
-            trail_price     := low * (1 + trail_offset_pct / 100)
-            sl_price        := math.min(entry_price, trail_price)
-            tp_price        := na
-        if trailing_active
-            float new_trail = low * (1 + trail_offset_pct / 100)
-            if new_trail < nz(trail_price)
-                trail_price := new_trail
-                sl_price    := math.min(entry_price, trail_price)
+// Background color for trend
+bgColor = bullish ? color.new(#26a69a, 90) : color.new(#ef5350, 90)
+bgcolor(showBackground ? bgColor : na)
 
-// ==========================================
-// --- EXIT EXECUTION ---
-// ==========================================
-if strategy.position_size > 0 and not na(sl_price)
-    if not na(tp_price)
-        strategy.exit("Exit Long", "Long", stop=sl_price, limit=tp_price)
-    else
-        strategy.exit("Exit Long", "Long", stop=sl_price)
+// Signals
+plotshape(signal_long and showSignals, title="Long", style=shape.triangleup,
+          location=location.belowbar, color=#26a69a, size=size.normal, text="BUY")
+plotshape(signal_short and showSignals, title="Short", style=shape.triangledown,
+          location=location.abovebar, color=#ef5350, size=size.normal, text="SELL")
 
-if strategy.position_size < 0 and not na(sl_price)
-    if not na(tp_price)
-        strategy.exit("Exit Short", "Short", stop=sl_price, limit=tp_price)
-    else
-        strategy.exit("Exit Short", "Short", stop=sl_price)
+// ═══════════════════════════════════════════════════════════════════════════
+// WEBHOOK INTEGRATION — SOSO BTC MAGNET
+// ═══════════════════════════════════════════════════════════════════════════
+//  IMPORTANT: Your TradingView Alert Webhook URL MUST end with /webhook
+//  WRONG:  https://btc-trader-e2t9.onrender.com
+//  RIGHT:  https://btc-trader-e2t9.onrender.com/webhook
+// ═══════════════════════════════════════════════════════════════════════════
 
-// ==========================================
-// --- VISUALIZATION ---
-// ==========================================
-f_prob_size(prob) =>
-    float p = prob * 100
-    if p > 95
-        size.huge
-    else if p > 90
-        size.large
-    else if p > 83
-        size.normal
-    else if p > 75
-        size.small
-    else
-        size.tiny
-
-bool visible_bull    = signal_long and strategy.position_size <= 0
-bool visible_bear    = signal_short and strategy.position_size >= 0
-
-barcolor(visible_bull ? color_candle_bull : visible_bear ? color_candle_bear : na)
-
-if show_signals and visible_bull
-    label.new(bar_index, low,
-         text      = "BUY (" + str.tostring(prob_up * 100, "#.#") + "%)",
-         color     = color.new(color_candle_bull, 88),
-         textcolor = color_candle_bull,
-         style     = label.style_label_up,
-         yloc      = yloc.belowbar,
-         size      = f_prob_size(prob_up))
-
-if show_signals and visible_bear
-    label.new(bar_index, high,
-         text      = "SELL (" + str.tostring(prob_down * 100, "#.#") + "%)",
-         color     = color.new(color_candle_bear, 88),
-         textcolor = color_candle_bear,
-         style     = label.style_label_down,
-         yloc      = yloc.abovebar,
-         size      = f_prob_size(prob_down))
-
-// SuperTrend Line
-upTrend   = plot(show_st_line and last_stdir ==  1 ? supertrend : na, "Bullish Trend", color = color_bull, style = plot.style_linebr)
-downTrend = plot(show_st_line and last_stdir == -1 ? supertrend : na, "Bearish Trend", color = color_bear, style = plot.style_linebr)
-
-low_p  = plot(low,  display = display.none)
-high_p = plot(high, display = display.none)
-
-fill(low_p,  upTrend,   (open + close) / 2, supertrend, show_fill and direction < 0 ? color_bull : na, na)
-fill(high_p, downTrend, supertrend, (open + close) / 2, na, show_fill and direction > 0 ? color_bear : na)
-
-// --- Risk Level Plots ---
-color sl_color    = color.new(color.red, 20)
-color tp_color    = color.new(color.green, 20)
-color trail_color = color.new(color.orange, 20)
-color entry_color = color.new(color.white, 40)
-
-plot(show_risk_levels and in_trade ? entry_price : na, "Entry",  color=entry_color, style=plot.style_linebr, linewidth=1)
-plot(show_risk_levels and in_trade ? sl_price    : na, "SL",       color=sl_color,    style=plot.style_linebr, linewidth=2)
-plot(show_risk_levels and in_trade and not na(tp_price) ? tp_price : na, "TP", color=tp_color, style=plot.style_linebr, linewidth=2)
-plot(show_risk_levels and in_trade and trailing_active ? trail_price : na, "Trail", color=trail_color, style=plot.style_linebr, linewidth=1)
-
-// ==========================================
-// --- ALERTS ---
-// ==========================================
-alertcondition(signal_long,  "Bullish Signal",  "Bullish signal confirmed by AI")
-alertcondition(signal_short, "Bearish Signal",  "Bearish signal confirmed by AI")
-alertcondition(signal_long or signal_short, "Signal", "Signal confirmed by AI")
-
-// ==========================================
-// --- EXPORT SIGNALS FOR PYTHON OPTIMIZER ---
-// ==========================================
-// Export 1 (Long), -1 (Short), or 0 (None) only to the Data Window to keep the chart clean.
-int export_signal = signal_long ? 1 : signal_short ? -1 : 0
-plot(export_signal, "Signal", display=display.data_window)
-
-// ==========================================
-// --- NATIVE UI DASHBOARD (STRATEGY) ---
-// ==========================================
-group_dash = "📊 Performance Dashboard"
-show_dashboard = input.bool(true, "Show Trades Panel", group=group_dash)
-pos_dash_str = input.string("Bottom Right", "Panel Position", options=["Top Left", "Top Center", "Top Right", "Bottom Left", "Bottom Center", "Bottom Right"], group=group_dash)
-
-var dash_pos = position.bottom_right
-if pos_dash_str == "Top Left"
-    dash_pos := position.top_left
-else if pos_dash_str == "Top Center"
-    dash_pos := position.top_center
-else if pos_dash_str == "Top Right"
-    dash_pos := position.top_right
-else if pos_dash_str == "Bottom Left"
-    dash_pos := position.bottom_left
-else if pos_dash_str == "Bottom Center"
-    dash_pos := position.bottom_center
-else
-    dash_pos := position.bottom_right
-trades_to_track = input.int(20, "Last N trades to measure", minval=1, group=group_dash)
-
-var table dash = table.new(dash_pos, 2, 4, bgcolor=color.new(color.black, 10), border_color=color.new(color.white, 80), border_width=1)
-
-if show_dashboard
-    int total_history = strategy.closedtrades
-    int eval_count = math.min(total_history, trades_to_track)
-    
-    int wins = 0
-    float sum_pnl_usd = 0.0
-    
-    if eval_count > 0
-        for i = 0 to eval_count - 1
-            int trade_idx = total_history - 1 - i
-            float res = strategy.closedtrades.profit(trade_idx)
-            if res > 0
-                wins += 1
-            sum_pnl_usd += res
-            
-    float win_rate = eval_count > 0 ? (wins / eval_count) * 100 : 0.0
-    
-    table.cell(dash, 0, 0, "Last Trades Evaluated:", text_color=color.white, text_size=size.normal)
-    table.cell(dash, 1, 0, str.tostring(eval_count), text_color=color.white, text_size=size.normal)
-    
-    table.cell(dash, 0, 1, "Wins / Losses:", text_color=color.white, text_size=size.normal)
-    table.cell(dash, 1, 1, str.tostring(wins) + " / " + str.tostring(eval_count - wins), text_color=color.white, text_size=size.normal)
-    
-    table.cell(dash, 0, 2, "Active Win Rate:", text_color=color.white, text_size=size.normal)
-    table.cell(dash, 1, 2, str.tostring(win_rate, "#.##") + "%", text_color=(win_rate >= 50 ? color.green : color.red), text_size=size.normal)
-    
-    table.cell(dash, 0, 3, "Net PnL (of these N):", text_color=color.white, text_size=size.normal)
-    table.cell(dash, 1, 3, "$" + str.tostring(sum_pnl_usd, "#.##"), text_color=(sum_pnl_usd > 0 ? color.green : color.red), text_size=size.normal)
-
-// ============================================================================
-// WEBHOOK BRIDGE — Auto-send signals to Node.js backend
-// ============================================================================
-string webhook_secret = "ragnar"
-
-if signal_long and barstate.isconfirmed
-    string json_long = '{"secret":"' + webhook_secret + '","symbol":"' + syminfo.ticker + '","side":"buy","amount":100,"sl":' + str.tostring(sl_price) + ',"tp":' + str.tostring(tp_price) + ',"message":"SOSO Long"}'
+if signal_long and barstate.isconfirmed and webhookUrl != ""
+    string json_long = '{"secret":"' + webhookSecret + '","symbol":"' + syminfo.ticker + '","side":"buy","amount":' + str.tostring(webhookAmount) + ',"sl":' + str.tostring(sl_price_long) + ',"tp":' + str.tostring(tp_price_long) + ',"message":"SOSO Long"}'
     alert(json_long, alert.freq_once_per_bar)
 
-if signal_short and barstate.isconfirmed
-    string json_short = '{"secret":"' + webhook_secret + '","symbol":"' + syminfo.ticker + '","side":"sell","amount":100,"sl":' + str.tostring(sl_price) + ',"tp":' + str.tostring(tp_price) + ',"message":"SOSO Short"}'
+if signal_short and barstate.isconfirmed and webhookUrl != ""
+    string json_short = '{"secret":"' + webhookSecret + '","symbol":"' + syminfo.ticker + '","side":"sell","amount":' + str.tostring(webhookAmount) + ',"sl":' + str.tostring(sl_price_short) + ',"tp":' + str.tostring(tp_price_short) + ',"message":"SOSO Short"}'
     alert(json_short, alert.freq_once_per_bar)
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TRADINGVIEW ALERT SETUP:
+// 1. Open Alerts panel (clock icon)
+// 2. Create Alert
+// 3. Condition: SOSO BTC MAGNET — AlgoTrend Strategy -> Alert() function calls
+// 4. Message: LEAVE BLANK
+// 5. Webhook URL:  https://btc-trader-e2t9.onrender.com/webhook  (MUST have /webhook)
+// 6. Frequency: Once Per Bar Close
+// 7. Click Create
+// ═══════════════════════════════════════════════════════════════════════════

@@ -8,7 +8,7 @@
 
 // --- CONFIGURATION ---
 // Replace 'your_random_secret_here' with the same value in your backend .env
-string webhook_secret = "your_random_secret_here"
+string webhook_secret = "ragnar"
 
 // --- LONG SIGNAL WEBHOOK ---
 // Fires only when a confirmed long signal happens and bar closes
@@ -23,25 +23,21 @@ if signal_short and barstate.isconfirmed
     alert(json_short, alert.freq_once_per_bar)
 
 // ============================================================================
-// TRADINGVIEW ALERT SETUP INSTRUCTIONS:
+//                        CRITICAL SETUP INSTRUCTIONS
+// ============================================================================
+//
 // 1. Open Alerts panel (clock icon on right sidebar)
 // 2. Click "Create Alert"
 // 3. Condition: Select your indicator -> Alert() function calls
 // 4. Message: LEAVE BLANK (Pine Script 'alert()' fills this automatically)
-// 5. Webhook URL: Paste your public server URL
-//    Example: https://your-ngrok-url.com/webhook
+//
+// 5. WEBHOOK URL — MUST end with /webhook  <<< READ THIS
+//    WRONG:  https://btc-trader-e2t9.onrender.com        (missing /webhook)
+//    RIGHT:  https://btc-trader-e2t9.onrender.com/webhook (correct!)
+//
 // 6. Frequency: Once Per Bar Close
 // 7. Name it: "SOSO BTC MAGNET Webhook"
 // 8. Click "Create"
 //
-// PAYLOAD SENT TO YOUR SERVER (JSON):
-// {
-//   "secret": "your_random_secret_here",
-//   "symbol": "BTCUSDT",
-//   "side": "buy",
-//   "amount": 100,
-//   "sl": 65000.5,
-//   "tp": 72000.0,
-//   "message": "SOSO Long"
-// }
+// If you see "Webhook delivery failed" in TradingView, your URL is wrong.
 // ============================================================================
